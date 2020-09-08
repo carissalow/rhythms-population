@@ -14,12 +14,11 @@ rule days_to_analyse:
 
 rule targets:
     input:
-        participant_info = "data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_raw.csv"
+        participant_symptoms = "data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_with_datetime.csv"
     params:
-        pid = "{pid}",
         summarised = "{summarised}",
-        targets_ratio_threshold = config["PARAMS_FOR_ANALYSIS"]["TARGETS_RATIO_THRESHOLD"],
-        targets_value_threshold = config["PARAMS_FOR_ANALYSIS"]["TARGETS_VALUE_THRESHOLD"]
+        symptom_cols = config["PARAMS_FOR_ANALYSIS"]["SYMPTOM_COLS"],
+        target_cols = config["PARAMS_FOR_ANALYSIS"]["TARGET_COLS"]
     output:
         "data/processed/{pid}/targets_{summarised}.csv"
     script:
@@ -113,7 +112,7 @@ rule nan_cells_ratio_of_cleaned_features:
 rule merge_features_and_targets:
     input:
         cleaned_features = "data/processed/data_for_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}/{source}_{day_segment}_clean.csv",
-        demographic_features = "data/processed/data_for_population_model/demographic_features.csv",
+        # demographic_features = "data/processed/data_for_population_model/demographic_features.csv",
         targets = "data/processed/data_for_population_model/targets_{summarised}.csv",
     params:
         summarised = "{summarised}",
@@ -121,6 +120,7 @@ rule merge_features_and_targets:
         numerical_operators = config["PARAMS_FOR_ANALYSIS"]["NUMERICAL_OPERATORS"],
         categorical_operators = config["PARAMS_FOR_ANALYSIS"]["CATEGORICAL_OPERATORS"],
         features_exclude_day_idx = config["PARAMS_FOR_ANALYSIS"]["FEATURES_EXCLUDE_DAY_IDX"],
+        date_offset = config["PARAMS_FOR_ANALYSIS"]["DATE_OFFSET"]
     output:
         "data/processed/data_for_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}/{source}_{day_segment}_{summarised}.csv"
     script:
@@ -132,7 +132,6 @@ rule baseline:
     params:
         cv_method = "{cv_method}",
         rowsnan_colsnan_days_colsvar_threshold = "{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}",
-        demographic_features = config["PARAMS_FOR_ANALYSIS"]["DEMOGRAPHIC_FEATURES"]
     output:
         "data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}/baseline/{cv_method}/{source}_{day_segment}_{summarised}.csv"
     log:
@@ -152,9 +151,10 @@ rule modeling:
         summarised = "{summarised}",
         scaler = "{scaler}",
         categorical_operators = config["PARAMS_FOR_ANALYSIS"]["CATEGORICAL_OPERATORS"],
-        categorical_demographic_features = config["PARAMS_FOR_ANALYSIS"]["CATEGORICAL_DEMOGRAPHIC_FEATURES"],
+        # categorical_demographic_features = config["PARAMS_FOR_ANALYSIS"]["CATEGORICAL_DEMOGRAPHIC_FEATURES"],
         model_hyperparams = config["PARAMS_FOR_ANALYSIS"]["MODEL_HYPERPARAMS"],
         rowsnan_colsnan_days_colsvar_threshold = "{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}"
+    threads: 6
     output:
         fold_predictions = "data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}/{model}/{cv_method}/{source}_{day_segment}_{summarised}_{scaler}/fold_predictions.csv",
         fold_metrics = "data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_before_threshold}|{days_after_threshold}_{cols_var_threshold}/{model}/{cv_method}/{source}_{day_segment}_{summarised}_{scaler}/fold_metrics.csv",

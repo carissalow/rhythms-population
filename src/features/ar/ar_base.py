@@ -59,5 +59,7 @@ def base_ar_features(ar_data, ar_deltas, day_segment, requested_features):
         
             ar_features.index.names = ["local_date"]
             ar_features = ar_features.reset_index()
+    
+    ar_features = ar_features[ar_features["ar_" + day_segment + "_count"] != 0].fillna(0)
 
     return ar_features

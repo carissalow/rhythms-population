@@ -113,5 +113,8 @@ def base_conversation_features(conversation_data, day_segment, requested_feature
 
 
             conversation_features = conversation_features.reset_index()
+    
+    conversation_features[["conversation_" + day_segment + "_timefirstconversation", "conversation_" + day_segment + "_timelastconversation"]] = conversation_features[["conversation_" + day_segment + "_timefirstconversation", "conversation_" + day_segment + "_timelastconversation"]].fillna(-1)
+    conversation_features = conversation_features.fillna(0)
 
     return conversation_features

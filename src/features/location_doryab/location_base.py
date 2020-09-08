@@ -3,6 +3,7 @@ import numpy as np
 from astropy.timeseries import LombScargle
 from sklearn.cluster import DBSCAN
 from math import radians, cos, sin, asin, sqrt
+from scipy.stats import entropy
 
 def base_location_features(location_data, day_segment, requested_features, dbscan_eps, dbscan_minsamples, threshold_static, maximum_gap_allowed,sampling_frequency):
     # name of the features this function can compute
@@ -365,9 +366,9 @@ def outliers_time_percent(locationData,sampling_frequency):
     if locationData is None or len(locationData) == 0:
         return None
     clusters = locationData["location_label"]
-    numoutliers = clusters[(clusters == -1)].sum() * sampling_frequency
+    numoutliers = clusters[(clusters == -1)].count() * sampling_frequency
     numtotal = len(clusters) * sampling_frequency
-    return (float(-1*numoutliers) / numtotal)
+    return (numoutliers / numtotal)
 
 
 def moving_time_percent(locationData):
@@ -426,8 +427,7 @@ def location_entropy(locationData):
     if len(clusters) > 0:
         # Get percentages for each location
         percents = clusters["location_label"].value_counts(normalize=True)
-        entropy = -1 * percents.map(lambda x: x * np.log(x)).sum()
-        return entropy
+        return entropy(percents)
     else:
         return None
 

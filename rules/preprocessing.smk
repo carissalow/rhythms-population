@@ -156,3 +156,14 @@ rule fitbit_sleep_with_datetime:
         intraday_data = "data/raw/{pid}/fitbit_sleep_intraday_with_datetime.csv"
     script:
         "../src/data/fitbit_readable_datetime.py"
+
+rule symptoms_readable_datetime:
+    input:
+        participant_symptoms = "data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_raw.csv"
+    params:
+        pid = "{pid}",
+        symptom_cols = config["PARAMS_FOR_ANALYSIS"]["SYMPTOM_COLS"],
+    output:
+        "data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_with_datetime.csv"
+    script:
+        "../src/data/symptoms_readable_datetime.py"

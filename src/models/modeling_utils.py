@@ -5,6 +5,9 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import cohen_kappa_score, roc_auc_score
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE, RandomOverSampler
+from sklearn.model_selection._split import _BaseKFold
+from sklearn.utils.validation import indexable, _num_samples
+import numpy as np
 
 
 def getMatchingColNames(operators, features):
@@ -27,8 +30,7 @@ def dropZeroVarianceCols(data):
         data_drop_cols_var = data
     return data_drop_cols_var
 
-# normalize based on all participants: return fitted scaler
-def getNormAllParticipantsScaler(features, scaler_flag):
+def getFittedScaler(features, scaler_flag):
     # MinMaxScaler
     if scaler_flag == "minmaxscaler":
         scaler = MinMaxScaler()
@@ -146,15 +148,68 @@ def createPipeline(model, oversampler_type):
         from xgboost import XGBClassifier
         pipeline = Pipeline([
             ("sampling", oversampler),
-            ("clf", XGBClassifier(random_state=0, n_jobs=36))
+            ("clf", XGBClassifier(random_state=0, n_jobs=6))
         ])
     elif model == "LightGBM":
         from lightgbm import LGBMClassifier
         pipeline = Pipeline([
             ("sampling", oversampler),
-            ("clf", LGBMClassifier(random_state=0, n_jobs=36))
+            ("clf", LGBMClassifier(random_state=10, n_jobs=6, n_estimators=200, num_leaves=128, colsample_bytree=0.8))
         ])
     else:
         raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
 
     return pipeline
+
+class TimeSeriesGroupKFold(_BaseKFold):
+    def __init__(self, n_splits=5, *, max_train_size=None):
+        super().__init__(n_splits, shuffle=False, random_state=None)
+        self.max_train_size = max_train_size
+    
+    def split(self, X, y=None, groups=None):
+        X, y, groups = indexable(X, y, groups)
+        indices = np.arange(_num_samples(X))
+        X_copy = X.copy()
+        X_copy.insert(0, "idx", indices)
+
+        for test_index in self._iter_test_masks(X_copy, y, "pid"):
+            train_index = indices[np.logical_not(test_index)]
+            test_index = indices[test_index]
+
+            discard_train_index = []
+            # exclude days after test for specific participant
+            for pid in set(X_copy.iloc[test_index].index.get_level_values("pid").tolist()):
+                participant_in_train = X_copy.iloc[train_index][X_copy.iloc[train_index].index.get_level_values("pid") == pid]
+                participant_in_test = X_copy.iloc[test_index][X_copy.iloc[test_index].index.get_level_values("pid") == pid]
+                last_date_in_test = participant_in_test.index.max()
+
+                discard_train_index.extend(participant_in_train[participant_in_train.index >= pd.Index([last_date_in_test]*len(participant_in_train))]["idx"].tolist())
+            
+            train_index = train_index[~np.isin(train_index, discard_train_index)]
+
+            yield train_index, test_index
+    
+    def get_n_splits(self, X=None, y=None, groups=None):
+        return self.n_splits
+
+    def _iter_test_masks(self, X=None, y=None, groups=None):
+        # Generates boolean masks corresponding to test sets.
+        for test_index in self._iter_test_indices(X, y, groups):
+            test_mask = np.zeros(_num_samples(X), dtype=np.bool)
+            test_mask[test_index] = True
+            yield test_mask
+    
+    def _iter_test_indices(self, X, y=None, groups=None):
+        n_samples = _num_samples(X)
+        indices = np.arange(n_samples)
+        if self.shuffle:
+            check_random_state(self.random_state).shuffle(indices)
+
+        n_splits = self.n_splits
+        fold_sizes = np.full(n_splits, n_samples // n_splits, dtype=np.int)
+        fold_sizes[:n_samples % n_splits] += 1
+        current = 0
+        for fold_size in fold_sizes:
+            start, stop = current, current + fold_size
+            yield indices[start:stop]
+            current = stop

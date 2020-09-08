@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from statistics import mean
-from modeling_utils import getMetrics, createPipeline
+from modeling_utils import getMetrics, createPipeline, TimeSeriesGroupKFold
 from sklearn.model_selection import LeaveOneOut
 
 
@@ -30,7 +30,7 @@ def baselineMetricsOfRandomWeightedClassifier(targets, majority_ratio, majority_
         avg_metrics[key] = mean(metrics_all_iters[key])
     return avg_metrics
 
-def baselineMetricsOfDTWithDemographicFeatures(cv_method, data_x, data_y, oversampler_type):
+def baselineMetricsOfDTWithDayIdxFeatures(cv_method, data_x, data_y, oversampler_type):
     pred_y, true_y = [], []
     for train_index, test_index in cv_method.split(data_x):
         train_x, test_x = data_x.iloc[train_index], data_x.iloc[test_index]
@@ -43,14 +43,13 @@ def baselineMetricsOfDTWithDemographicFeatures(cv_method, data_x, data_y, oversa
     return getMetrics(pred_y, pred_y_prob, true_y)
 
 
-cv_method = globals()[snakemake.params["cv_method"]]()
-colnames_demographic_features = snakemake.params["demographic_features"]
+data = pd.read_csv(snakemake.input[0], index_col=["pid", "local_date"])
+cv_method = globals()[snakemake.params["cv_method"]](n_splits = data.shape[0])
 rowsnan_colsnan_days_colsvar_threshold = snakemake.params["rowsnan_colsnan_days_colsvar_threshold"]
 
-
-data = pd.read_csv(snakemake.input[0], index_col=["pid"])
 data_x, data_y = data.drop("target", axis=1), data[["target"]]
 targets_value_counts = data_y["target"].value_counts()
+
 
 baseline_metrics = pd.DataFrame(columns=["method", "fullMethodName", "accuracy", "precision0", "recall0", "f10", "precision1", "recall1", "f11", "auc", "kappa"])
 if len(targets_value_counts) < 2:
@@ -63,19 +62,18 @@ else:
         oversampler_type = "SMOTE"
     else:
         oversampler_type = "RandomOverSampler"
-
     # Baseline 1: majority class classifier => predict every sample as majority class
     baseline1_metrics, majority_class = baselineAccuracyOfMajorityClassClassifier(data_y)
     majority_ratio = baseline1_metrics["accuracy"]
     # Baseline 2: random weighted classifier => random classifier with binomial distribution
     baseline2_metrics = baselineMetricsOfRandomWeightedClassifier(data_y, majority_ratio, majority_class, 1000)
-    # Baseline 3: decision tree with demographic features
-    baseline3_metrics = baselineMetricsOfDTWithDemographicFeatures(cv_method, data_x[colnames_demographic_features], data_y, oversampler_type)
+    # Baseline 3: decision tree with day_idx features
+    baseline3_metrics = baselineMetricsOfDTWithDayIdxFeatures(cv_method, data_x[["day_idx"]], data_y, oversampler_type)
     
     baselines = [baseline1_metrics, baseline2_metrics, baseline3_metrics]
 
     baseline_metrics = pd.DataFrame({"method": ["majority", "rwc", "dt"],
-                             "fullMethodName": ["MajorityClassClassifier", "RandomWeightedClassifier", "DecisionTreeWithDemographicFeatures"],
+                             "fullMethodName": ["MajorityClassClassifier", "RandomWeightedClassifier", "DecisionTreeWithDayIdxFeatures"],
                              "accuracy": [baseline["accuracy"] for baseline in baselines],
                              "precision0": [baseline["precision0"] for baseline in baselines],
                              "recall0": [baseline["recall0"] for baseline in baselines],

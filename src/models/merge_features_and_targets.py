@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pandas.tseries.offsets import DateOffset
 from modeling_utils import getMatchingColNames, dropZeroVarianceCols
 
 
@@ -33,6 +34,7 @@ cols_var_threshold = snakemake.params["cols_var_threshold"]
 numerical_operators = snakemake.params["numerical_operators"]
 categorical_operators = snakemake.params["categorical_operators"]
 features_exclude_day_idx = snakemake.params["features_exclude_day_idx"]
+date_offset = int(snakemake.params["date_offset"])
 
 
 # Extract summarised features based on daily features:
@@ -49,12 +51,16 @@ if summarised == "summarised":
 
 elif summarised == "notsummarised":
 
-    features = pd.read_csv(snakemake.input["cleaned_features"])
-    demographic_features = pd.read_csv(snakemake.input["demographic_features"])
+    features = pd.read_csv(snakemake.input["cleaned_features"], index_col=["pid", "local_date"])
     
-    features = features.merge(demographic_features, on="pid", how="left").set_index(["pid", "local_date"])
-    targets = pd.read_csv(snakemake.input["targets"], index_col=["pid", "local_date"])
-    data = pd.concat([features, targets], axis=1, join="inner")
+    # demographic_features = pd.read_csv(snakemake.input["demographic_features"])
+    # features = features.merge(demographic_features, on="pid", how="left").set_index(["pid", "local_date"])
+
+    targets = pd.read_csv(snakemake.input["targets"], parse_dates=["local_date"])
+    targets.loc[:, "local_date"] = (targets["local_date"] - DateOffset(days = date_offset)).apply(lambda dt: dt.strftime("%Y-%m-%d"))
+    targets.set_index(["pid", "local_date"], inplace=True)
+
+    data = pd.concat([features, targets], axis=1, join="inner").sort_index()
 
 else:
     raise ValueError("SUMMARISED parameter in config.yaml can only be 'summarised' or 'notsummarised'")

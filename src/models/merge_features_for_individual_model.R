@@ -32,4 +32,11 @@ if(!is.null(days_to_include)){
   features_for_individual_model <- merge(features_for_individual_model, read.csv(days_to_include), by="local_date")
 }
 
+# fillna with 0 for calls and messages
+time_related_col_names <- colnames(features_for_individual_model %>% select(ends_with("timefirstcall"), ends_with("timelastcall"), ends_with("timefirstmessage"), ends_with("timelastmessage")))
+features_for_individual_model[time_related_col_names][is.na(features_for_individual_model[time_related_col_names])] <- -1
+
+col_names <- colnames(features_for_individual_model %>% select(starts_with("call"), starts_with("messages")))
+features_for_individual_model[col_names][is.na(features_for_individual_model[col_names])] <- 0
+
 write.csv(features_for_individual_model, snakemake@output[[1]], row.names = FALSE)

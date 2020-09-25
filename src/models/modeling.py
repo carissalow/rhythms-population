@@ -176,6 +176,17 @@ elif summarised == "notsummarised":
 else:
     raise ValueError("SUMMARISED parameter in config.yaml can only be 'summarised' or 'notsummarised'")
 
+
+# drop highly correlated features
+## line 1: >= 0.9; line 2: == 1
+#correlated_cols = ["heartrate_daily_avghr", "step_daily_countepisodesedentarybout", "sleep_daily_sumdurationinbedall", "sleep_daily_countepisodenap", "sleep_daily_sumdurationinbednap", "sleep_daily_sumdurationinbedmain"] + ["heartrate_daily_medianhr", "sleep_daily_sumdurationasleepall", "sleep_daily_sumdurationawakemain", "step_daily_stdallsteps", "step_daily_sumallsteps", "step_daily_sumdurationactivebout", "screen_daily_stddurationunlock", "screen_daily_maxdurationunlock", "location_daily_meanlengthstayatclusters", "location_daily_numberlocationtransitions", "location_daily_loglocationvariance", "acc_daily_stddurationnonexertionalactivityepisode", "acc_daily_stddurationexertionalactivityepisode", "acc_daily_validsensedminutes"]
+correlated_cols = ["heartrate_daily_avghr", "step_daily_countepisodesedentarybout", "sleep_daily_sumdurationinbedall", "sleep_daily_countepisodenap", "sleep_daily_sumdurationinbednap", "sleep_daily_sumdurationinbedmain"]
+for col in correlated_cols:
+    if col in data.columns:
+        del data[col]
+
+
+
 # for circadianmovement feature: the largest value is 6.34. We replace inf with 10.
 data = data.replace(np.inf, 10)
 

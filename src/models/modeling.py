@@ -3,6 +3,7 @@ import numpy as np
 from statistics import mean
 from modeling_utils import getMatchingColNames, dropZeroVarianceCols, getFittedScaler, getMetrics, getFeatureImportances, createPipeline, TimeSeriesGroupKFold
 from sklearn.model_selection import train_test_split, LeaveOneOut, GridSearchCV, cross_val_score, KFold
+from mlxtend.feature_selection import SequentialFeatureSelector
 
 
 def imputeNumericalFeaturesWithNearestTwoDays(train_numerical_features, test_numerical_features, flag):
@@ -197,10 +198,12 @@ categorical_feature_colnames = getMatchingColNames(categorical_operators, data_x
 
 # Step 2. Nested cross validation
 cv_class = globals()[cv_method]
-outer_cv = cv_class(n_splits = data_x.shape[0])
+inner_cv = cv_class()
+outer_cv = cv_class()
 
-fold_id, pid, true_y, pred_y, pred_y_prob = [], [], [], [], []
+fold_id, fold_id_unique, pid, local_date, best_params, true_y, pred_y, pred_y_prob = [], [], [], [], [], [], [], []
 feature_importances_all_folds = pd.DataFrame()
+metrics_all_folds = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "auc": [], "kappa": []}
 fold_count = 1
 
 # Outer cross validation
@@ -231,40 +234,51 @@ for train_index, test_index in outer_cv.split(data_x):
         break
 
     # Inner cross validation
+    # Feature selection: sequential foward floating selection
+    from lightgbm import LGBMClassifier
+    feature_selector = SequentialFeatureSelector(estimator=LGBMClassifier(), 
+           k_features=3,
+           forward=True, 
+           floating=True, 
+           scoring="f1_macro",
+           cv=0)
+
     if min(targets_value_counts) >= 6:
         # SMOTE requires n_neighbors <= n_samples, the default value of n_neighbors is 6
-        clf = createPipeline(model, "SMOTE")
+        clf = GridSearchCV(estimator=createPipeline(model, "SMOTE", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="f1_macro")
     else:
         # RandomOverSampler: over-sample the minority class(es) by picking samples at random with replacement.
-        clf = createPipeline(model, "RandomOverSampler")
+        clf = GridSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="f1_macro")
     clf.fit(train_x, train_y.values.ravel())
 
     # Collect results and parameters
+    best_params = best_params + [clf.best_params_] * test_x.shape[0]
     cur_fold_pred = clf.predict(test_x).tolist()
     pred_y = pred_y + cur_fold_pred
 
     proba_of_two_categories = clf.predict_proba(test_x).tolist()
-    pred_y_prob = pred_y_prob + [probabilities[clf.classes_.tolist().index(1)] for probabilities in proba_of_two_categories]
+    cur_fold_pred_prob = [probabilities[clf.classes_.tolist().index(1)] for probabilities in proba_of_two_categories]
+    pred_y_prob = pred_y_prob + cur_fold_pred_prob
+
+    # Step 3. Model evaluation
+    metrics_current_fold = getMetrics(cur_fold_pred, cur_fold_pred_prob, test_y.values.ravel().tolist())
+    for k, v in metrics_current_fold.items():
+        metrics_all_folds[k].append(v)
 
     true_y = true_y + test_y.values.ravel().tolist()
-    pid = pid + test_y.index.tolist() # each test partition (fold) in the outer cv is a participant (LeaveOneOut cv)
-    feature_importances_current_fold = getFeatureImportances(model, clf.steps[1][1], train_x.columns)
+    pid = pid + test_y.index.get_level_values("pid").tolist()
+    local_date = local_date + test_y.index.get_level_values("local_date").tolist()
+    feature_importances_current_fold = getFeatureImportances(model, clf.best_estimator_.steps[2][1], clf.best_estimator_.steps[1][1].k_feature_names_)
     feature_importances_all_folds = pd.concat([feature_importances_all_folds, feature_importances_current_fold], sort=False, axis=0)
-    fold_id.append(fold_count)
+    fold_id.extend([fold_count] * test_x.shape[0])
+    fold_id_unique.append(fold_count)
     fold_count = fold_count + 1
 
-# Step 3. Model evaluation
-if len(pred_y) > 1:
-    metrics = getMetrics(pred_y, pred_y_prob, true_y)
-else:
-    metrics = {"accuracy": None, "precision0": None, "recall0": None, "f10": None, "precision1": None, "recall1": None, "f11": None, "auc": None, "kappa": None}
-
 # Step 4. Save results, parameters, and metrics to CSV files
-fold_predictions = pd.DataFrame({"fold_id": fold_id, "pid": pid, "true_y": true_y, "pred_y": pred_y, "pred_y_prob": pred_y_prob})
-fold_metrics = pd.DataFrame({"fold_id":[], "accuracy":[], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "auc": [], "kappa": []})
-overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [num_of_features], "rowsnan_colsnan_days_colsvar_threshold": [rowsnan_colsnan_days_colsvar_threshold], "model": [model], "cv_method": [cv_method], "source": [source], "scaler": [scaler], "day_segment": [day_segment], "summarised": [summarised], "accuracy": [metrics["accuracy"]], "precision0": [metrics["precision0"]], "recall0": [metrics["recall0"]], "f10": [metrics["f10"]], "precision1": [metrics["precision1"]], "recall1": [metrics["recall1"]], "f11": [metrics["f11"]], "auc": [metrics["auc"]], "kappa": [metrics["kappa"]]})
-feature_importances_all_folds.insert(loc=0, column='fold_id', value=fold_id)
-feature_importances_all_folds.insert(loc=1, column='pid', value=pid)
+fold_predictions = pd.DataFrame({"fold_id": fold_id, "pid": pid, "local_date": local_date, "hyperparameters": best_params, "true_y": true_y, "pred_y": pred_y, "pred_y_prob": pred_y_prob})
+fold_metrics = pd.DataFrame({"fold_id": fold_id_unique, "accuracy": metrics_all_folds["accuracy"], "precision0": metrics_all_folds["precision0"], "recall0": metrics_all_folds["recall0"], "f10": metrics_all_folds["f10"], "precision1": metrics_all_folds["precision1"], "recall1": metrics_all_folds["recall1"], "f11": metrics_all_folds["f11"], "auc": metrics_all_folds["auc"], "kappa": metrics_all_folds["kappa"]})
+overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [num_of_features], "rowsnan_colsnan_days_colsvar_threshold": [rowsnan_colsnan_days_colsvar_threshold], "model": [model], "cv_method": [cv_method], "source": [source], "scaler": [scaler], "day_segment": [day_segment], "summarised": [summarised], "accuracy": [mean(metrics_all_folds["accuracy"])], "precision0": [mean(metrics_all_folds["precision0"])], "recall0": [mean(metrics_all_folds["recall0"])], "f10": [mean(metrics_all_folds["f10"])], "precision1": [mean(metrics_all_folds["precision1"])], "recall1": [mean(metrics_all_folds["recall1"])], "f11": [mean(metrics_all_folds["f11"])], "auc": [mean(metrics_all_folds["auc"])], "kappa": [mean(metrics_all_folds["kappa"])]})
+feature_importances_all_folds.insert(loc=0, column="fold_id", value=fold_id_unique)
 
 fold_predictions.to_csv(snakemake.output["fold_predictions"], index=False)
 fold_metrics.to_csv(snakemake.output["fold_metrics"], index=False)

@@ -245,7 +245,7 @@ OVERALL_COMPLIANCE_HEATMAP:
 PARAMS_FOR_ANALYSIS:
   COMPUTE: True
   GROUNDTRUTH_TABLE: participant_info
-  SOURCES: &sources ["phone_features", "fitbit_features", "phone_fitbit_features"]
+  SOURCES: &sources ["phone_fitbit_features"] #["phone_features", "fitbit_features", "phone_fitbit_features"]
   DAY_SEGMENTS: *day_segments
   PHONE_FEATURES: [accelerometer, activity_recognition, applications_foreground, battery, calls_incoming, calls_missed, calls_outgoing, conversation, light, location_doryab, messages_received, messages_sent, screen]
   FITBIT_FEATURES: [fitbit_heartrate, fitbit_step, fitbit_sleep]
@@ -309,7 +309,7 @@ PARAMS_FOR_ANALYSIS:
     XGBoost:
       {} #{"clf__learning_rate": [0.01, 0.1, 1], "clf__n_estimators": [10, 100, 200], "clf__max_depth": [null, 3, 7, 15]}
     LightGBM:
-      {"clf__learning_rate": [0.01, 0.05, 0.1, 0.15, 0.2], "clf__n_estimators": [10, 50, 100, 200, 300], "clf__num_leaves": [31, 64, 128, 256], "clf__colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1]}
+      {} #{"clf__learning_rate": [0.01, 0.05, 0.1, 0.15, 0.2], "clf__n_estimators": [10, 50, 100, 200, 300], "clf__num_leaves": [31, 64, 128, 256], "clf__colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1]}
 
 
   # Target Settings:

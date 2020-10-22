@@ -319,6 +319,6 @@ PARAMS_FOR_ANALYSIS:
 
   # symptom
   SYMPTOM_COLS: [score_pain, score_fatigue, score_sleep_dist, score_concentrating, score_sad, score_anxious, score_short_breath, score_numbness, score_nausea, score_diarrhea, score_other]
-  TARGET_COLS: [score_fatigue] #[score_pain, score_fatigue, score_sleep_dist, score_concentrating, score_sad, score_anxious, score_short_breath, score_numbness, score_nausea, score_diarrhea] # [score_fatigue, score_pain, score_nausea, score_diarrhea]
+  TARGET_COLS: [score_pain, score_fatigue, score_sleep_dist, score_concentrating, score_sad, score_anxious, score_short_breath, score_numbness, score_nausea, score_diarrhea] # [score_fatigue, score_pain, score_nausea, score_diarrhea]
   TARGET_TABLE: participant_symptoms
   DATE_OFFSET: 1

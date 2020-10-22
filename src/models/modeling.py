@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from modeling_utils import getMatchingColNames, dropZeroVarianceCols, getFittedScaler, getMetrics, getFeatureImportances, createPipeline, TimeSeriesGroupKFold
-from sklearn.model_selection import train_test_split, LeaveOneOut, GridSearchCV, cross_val_score, KFold
+from sklearn.model_selection import train_test_split, LeaveOneOut, GridSearchCV, cross_val_score, KFold, LeaveOneGroupOut
 from mlxtend.feature_selection import SequentialFeatureSelector
 
 def computeAvgAndStd(metrics):
@@ -200,15 +200,17 @@ categorical_feature_colnames = getMatchingColNames(categorical_operators, data_x
 # Step 2. Nested cross validation
 cv_class = globals()[cv_method]
 inner_cv = cv_class()
-outer_cv = cv_class(n_splits=100)
+outer_cv = LeaveOneGroupOut() #cv_class(n_splits=100)
 
 fold_id, fold_id_unique, pid, local_date, best_params, true_y, pred_y, pred_y_prob = [], [], [], [], [], [], [], []
 feature_importances_all_folds = pd.DataFrame()
 metrics_all_folds = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": [], "kappa": []}
 fold_count = 1
 
+groups = data.index.get_level_values("pid").to_numpy()
+
 # Outer cross validation
-for train_index, test_index in outer_cv.split(data_x):
+for train_index, test_index in outer_cv.split(data_x, groups=groups):
 
     # Split train and test, numerical and categorical features
     train_x, test_x = data_x.iloc[train_index], data_x.iloc[test_index]

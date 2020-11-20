@@ -200,7 +200,7 @@ categorical_feature_colnames = getMatchingColNames(categorical_operators, data_x
 # Step 2. Nested cross validation
 cv_class = globals()[cv_method]
 inner_cv = cv_class()
-outer_cv = LeaveOneGroupOut() #cv_class(n_splits=100)
+outer_cv = cv_class(n_splits=100)
 
 fold_id, fold_id_unique, pid, local_date, best_params, true_y, pred_y, pred_y_prob = [], [], [], [], [], [], [], []
 feature_importances_all_folds = pd.DataFrame()

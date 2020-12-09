@@ -168,7 +168,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             pipeline = Pipeline([
                 ("sampling", oversampler),
                 ("fs", kwargs["feature_selector"]),
-                ("clf", LGBMClassifier(random_state=10, n_jobs=6, n_estimators=200, num_leaves=128, colsample_bytree=0.8))
+                ("clf", LGBMClassifier(objective="binary", random_state=10, n_jobs=36)) #n_estimators=200, num_leaves=128, colsample_bytree=0.8
             ])
         else:
             raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
@@ -219,7 +219,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             from lightgbm import LGBMClassifier
             pipeline = Pipeline([
                 ("sampling", oversampler),
-                ("clf", LGBMClassifier(random_state=10, n_jobs=6, n_estimators=200, num_leaves=128, colsample_bytree=0.8))
+                ("clf", LGBMClassifier(objective="binary", random_state=10, n_jobs=36)) #n_estimators=200, num_leaves=128, colsample_bytree=0.8
             ])
         else:
             raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")

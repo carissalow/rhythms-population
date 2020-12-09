@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from modeling_utils import getMatchingColNames, dropZeroVarianceCols, getFittedScaler, getMetrics, getFeatureImportances, createPipeline, TimeSeriesGroupKFold
-from sklearn.model_selection import train_test_split, LeaveOneOut, GridSearchCV, cross_val_score, KFold, LeaveOneGroupOut
+from sklearn.model_selection import train_test_split, LeaveOneOut, GridSearchCV, RandomizedSearchCV, cross_val_score, KFold, LeaveOneGroupOut, GroupKFold
 from mlxtend.feature_selection import SequentialFeatureSelector
 
 def computeAvgAndStd(metrics):
@@ -199,8 +199,8 @@ categorical_feature_colnames = getMatchingColNames(categorical_operators, data_x
 
 # Step 2. Nested cross validation
 cv_class = globals()[cv_method]
-inner_cv = cv_class()
-outer_cv = cv_class(n_splits=100)
+inner_cv = cv_class(n_splits=3)
+outer_cv = cv_class(n_splits=875) #GroupKFold(n_splits=7) 875
 
 fold_id, fold_id_unique, pid, local_date, best_params, true_y, pred_y, pred_y_prob = [], [], [], [], [], [], [], []
 feature_importances_all_folds = pd.DataFrame()
@@ -250,14 +250,14 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
     """
     # method 2: mutual information
     from sklearn.feature_selection import SelectKBest, mutual_info_classif
-    feature_selector = SelectKBest(mutual_info_classif, k=70)
+    feature_selector = SelectKBest(mutual_info_classif, k=75)
 
     if min(targets_value_counts) >= 6:
         # SMOTE requires n_neighbors <= n_samples, the default value of n_neighbors is 6
-        clf = GridSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="f1_macro")
+        clf = RandomizedSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=10, n_iter=3) # param_grid
     else:
         # RandomOverSampler: over-sample the minority class(es) by picking samples at random with replacement.
-        clf = GridSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="f1_macro")
+        clf = RandomizedSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=10, n_iter=3)
     clf.fit(train_x, train_y.values.ravel())
 
     # Collect results and parameters
@@ -269,10 +269,12 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
     cur_fold_pred_prob = [probabilities[clf.classes_.tolist().index(1)] for probabilities in proba_of_two_categories]
     pred_y_prob = pred_y_prob + cur_fold_pred_prob
 
+    """
     # Step 3. Model evaluation
     metrics_current_fold = getMetrics(cur_fold_pred, cur_fold_pred_prob, test_y.values.ravel().tolist())
     for k, v in metrics_current_fold.items():
         metrics_all_folds[k].append(v)
+    """
 
     true_y = true_y + test_y.values.ravel().tolist()
     pid = pid + test_y.index.get_level_values("pid").tolist()
@@ -286,8 +288,10 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
 
 # Step 4. Save results, parameters, and metrics to CSV files
 fold_predictions = pd.DataFrame({"fold_id": fold_id, "pid": pid, "local_date": local_date, "hyperparameters": best_params, "true_y": true_y, "pred_y": pred_y, "pred_y_prob": pred_y_prob})
-fold_metrics = pd.DataFrame({"fold_id": fold_id_unique, "accuracy": metrics_all_folds["accuracy"], "precision0": metrics_all_folds["precision0"], "recall0": metrics_all_folds["recall0"], "f10": metrics_all_folds["f10"], "precision1": metrics_all_folds["precision1"], "recall1": metrics_all_folds["recall1"], "f11": metrics_all_folds["f11"], "f1_macro": metrics_all_folds["f1_macro"], "auc": metrics_all_folds["auc"], "kappa": metrics_all_folds["kappa"]})
-overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [num_of_features], "rowsnan_colsnan_days_colsvar_threshold": [rowsnan_colsnan_days_colsvar_threshold], "model": [model], "cv_method": [cv_method], "source": [source], "scaler": [scaler], "day_segment": [day_segment], "summarised": [summarised], "accuracy": [computeAvgAndStd(metrics_all_folds["accuracy"])], "precision0": [computeAvgAndStd(metrics_all_folds["precision0"])], "recall0": [computeAvgAndStd(metrics_all_folds["recall0"])], "f10": [computeAvgAndStd(metrics_all_folds["f10"])], "precision1": [computeAvgAndStd(metrics_all_folds["precision1"])], "recall1": [computeAvgAndStd(metrics_all_folds["recall1"])], "f11": [computeAvgAndStd(metrics_all_folds["f11"])], "f1_macro": [computeAvgAndStd(metrics_all_folds["f1_macro"])], "auc": [computeAvgAndStd(metrics_all_folds["auc"])], "kappa": [computeAvgAndStd(metrics_all_folds["kappa"])]})
+#fold_metrics = pd.DataFrame({"fold_id": fold_id_unique, "accuracy": metrics_all_folds["accuracy"], "precision0": metrics_all_folds["precision0"], "recall0": metrics_all_folds["recall0"], "f10": metrics_all_folds["f10"], "precision1": metrics_all_folds["precision1"], "recall1": metrics_all_folds["recall1"], "f11": metrics_all_folds["f11"], "f1_macro": metrics_all_folds["f1_macro"], "auc": metrics_all_folds["auc"], "kappa": metrics_all_folds["kappa"]})
+#overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [num_of_features], "rowsnan_colsnan_days_colsvar_threshold": [rowsnan_colsnan_days_colsvar_threshold], "model": [model], "cv_method": [cv_method], "source": [source], "scaler": [scaler], "day_segment": [day_segment], "summarised": [summarised], "accuracy": [computeAvgAndStd(metrics_all_folds["accuracy"])], "precision0": [computeAvgAndStd(metrics_all_folds["precision0"])], "recall0": [computeAvgAndStd(metrics_all_folds["recall0"])], "f10": [computeAvgAndStd(metrics_all_folds["f10"])], "precision1": [computeAvgAndStd(metrics_all_folds["precision1"])], "recall1": [computeAvgAndStd(metrics_all_folds["recall1"])], "f11": [computeAvgAndStd(metrics_all_folds["f11"])], "f1_macro": [computeAvgAndStd(metrics_all_folds["f1_macro"])], "auc": [computeAvgAndStd(metrics_all_folds["auc"])], "kappa": [computeAvgAndStd(metrics_all_folds["kappa"])]})
+fold_metrics = pd.DataFrame()
+overall_results = pd.DataFrame()
 feature_importances_all_folds.insert(loc=0, column="fold_id", value=fold_id_unique)
 
 fold_predictions.to_csv(snakemake.output["fold_predictions"], index=False)

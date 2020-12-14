@@ -283,7 +283,8 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
 
 # Step 3. Model evaluation
 metrics = getMetrics(pred_y, pred_y_proba, true_y)
-shap.summary_plot(shap_values=shap_all_folds.fillna(0).values, features=test_all_folds,  plot_size=(42, 8), show=False)
+shap.summary_plot(shap_values=shap_all_folds.fillna(0).values, features=test_all_folds,  plot_size=(12, 8), show=False)
+plt.tight_layout()
 plt.savefig("summary_plot_allfolds.png")
 plt.clf()
 

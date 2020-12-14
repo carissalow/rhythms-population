@@ -281,7 +281,7 @@ PARAMS_FOR_ANALYSIS:
   MODEL_NAMES: [LightGBM] # ["LogReg", "kNN", "SVM", "DT", "RF", "GB", "XGBoost", "LightGBM"]
   CV_METHODS: ["TimeSeriesGroupKFold"] #["LeaveOneOut"]
   SUMMARISED: ["notsummarised"] # "summarised" or "notsummarised"
-  RESULT_COMPONENTS: ["fold_predictions", "fold_metrics", "overall_results", "fold_feature_importances"]
+  RESULT_COMPONENTS: ["fold_predictions", "fold_metrics", "overall_results", "fold_feature_importances", "participant_results"]
 
   MODEL_SCALER:
     LogReg: ["notnormalized", "minmaxscaler", "standardscaler", "robustscaler"]

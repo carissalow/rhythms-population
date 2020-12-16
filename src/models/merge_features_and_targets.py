@@ -3,6 +3,16 @@ import numpy as np
 from pandas.tseries.offsets import DateOffset
 from modeling_utils import getMatchingColNames, dropZeroVarianceCols
 
+def filter_participant_without_enough_days(data, days_threshold):
+    data.reset_index(inplace=True)
+    if "pid" in data.columns:
+        data = data.groupby("pid").filter(lambda x: len(x) >= days_threshold)
+    else:
+        if data.shape[0] < days_threshold:
+            data = pd.DataFrame(columns=data.columns)
+
+    return data
+
 
 def summarisedNumericalFeatures(col_names, features):
     numerical_features = features.groupby(["pid"])[col_names].var()
@@ -35,7 +45,7 @@ numerical_operators = snakemake.params["numerical_operators"]
 categorical_operators = snakemake.params["categorical_operators"]
 features_exclude_day_idx = snakemake.params["features_exclude_day_idx"]
 date_offset = int(snakemake.params["date_offset"])
-
+days_threshold = int(snakemake.params["days_threshold"])
 
 # Extract summarised features based on daily features:
 # for categorical features: calculate variance across all days
@@ -64,6 +74,8 @@ elif summarised == "notsummarised":
 
 else:
     raise ValueError("SUMMARISED parameter in config.yaml can only be 'summarised' or 'notsummarised'")
+
+data = filter_participant_without_enough_days(data, days_threshold)
 
 if features_exclude_day_idx and ("day_idx" in data.columns):
     del data["day_idx"]

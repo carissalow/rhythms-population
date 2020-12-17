@@ -247,19 +247,19 @@ if config["PARAMS_FOR_ANALYSIS"]["COMPUTE"]:
     #                             zip,
     #                             rows_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["ROWS_NAN_THRESHOLD"],
     #                             cols_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["COLS_NAN_THRESHOLD"]))
-    files_to_compute.extend(expand(
-                                expand("data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{{rows_nan_threshold}}|{{cols_nan_threshold}}_{days_threshold}_{cols_var_threshold}/baseline/{cv_method}/{source}_{day_segment}_{summarised}.csv",
-                                    min_valid_hours_per_day=config["OVERALL_COMPLIANCE_HEATMAP"]["MIN_VALID_HOURS_PER_DAY"],
-                                    min_valid_bins_per_hour=config["PHONE_VALID_SENSED_DAYS"]["MIN_VALID_BINS_PER_HOUR"],
-                                    days_threshold = config["PARAMS_FOR_ANALYSIS"]["PARTICIPANT_DAYS_THRESHOLD"],
-                                    cols_var_threshold = config["PARAMS_FOR_ANALYSIS"]["COLS_VAR_THRESHOLD"],
-                                    cv_method = config["PARAMS_FOR_ANALYSIS"]["CV_METHODS"],
-                                    source = config["PARAMS_FOR_ANALYSIS"]["SOURCES"],
-                                    day_segment = config["PARAMS_FOR_ANALYSIS"]["DAY_SEGMENTS"],
-                                    summarised = config["PARAMS_FOR_ANALYSIS"]["SUMMARISED"]),
-                                zip,
-                                rows_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["ROWS_NAN_THRESHOLD"],
-                                cols_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["COLS_NAN_THRESHOLD"]))
+    # files_to_compute.extend(expand(
+    #                             expand("data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{{rows_nan_threshold}}|{{cols_nan_threshold}}_{days_threshold}_{cols_var_threshold}/baseline/{cv_method}/{source}_{day_segment}_{summarised}.csv",
+    #                                 min_valid_hours_per_day=config["OVERALL_COMPLIANCE_HEATMAP"]["MIN_VALID_HOURS_PER_DAY"],
+    #                                 min_valid_bins_per_hour=config["PHONE_VALID_SENSED_DAYS"]["MIN_VALID_BINS_PER_HOUR"],
+    #                                 days_threshold = config["PARAMS_FOR_ANALYSIS"]["PARTICIPANT_DAYS_THRESHOLD"],
+    #                                 cols_var_threshold = config["PARAMS_FOR_ANALYSIS"]["COLS_VAR_THRESHOLD"],
+    #                                 cv_method = config["PARAMS_FOR_ANALYSIS"]["CV_METHODS"],
+    #                                 source = config["PARAMS_FOR_ANALYSIS"]["SOURCES"],
+    #                                 day_segment = config["PARAMS_FOR_ANALYSIS"]["DAY_SEGMENTS"],
+    #                                 summarised = config["PARAMS_FOR_ANALYSIS"]["SUMMARISED"]),
+    #                             zip,
+    #                             rows_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["ROWS_NAN_THRESHOLD"],
+    #                             cols_nan_threshold = config["PARAMS_FOR_ANALYSIS"]["COLS_NAN_THRESHOLD"]))
     files_to_compute.extend(expand(
                                 expand("data/processed/output_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{{rows_nan_threshold}}|{{cols_nan_threshold}}_{days_threshold}_{cols_var_threshold}/{{model}}/{cv_method}/{source}_{day_segment}_{summarised}_{{scaler}}/{result}.csv",
                                     min_valid_hours_per_day=config["OVERALL_COMPLIANCE_HEATMAP"]["MIN_VALID_HOURS_PER_DAY"],

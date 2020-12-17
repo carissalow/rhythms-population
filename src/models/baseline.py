@@ -4,6 +4,7 @@ from statistics import mean
 from modeling_utils import getMetrics, createPipeline, TimeSeriesGroupKFold
 from sklearn.model_selection import LeaveOneOut
 
+np.random.seed(0)
 
 # As we do not have probability of each category, use label to denote the probability directly.
 # The probability will only be used to calculate the AUC value.

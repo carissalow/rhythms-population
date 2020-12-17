@@ -80,5 +80,5 @@ data = filter_participant_without_enough_days(data, days_threshold)
 if features_exclude_day_idx and ("day_idx" in data.columns):
     del data["day_idx"]
 
-data.to_csv(snakemake.output[0], index=True)
+data.to_csv(snakemake.output[0], index=False)
 

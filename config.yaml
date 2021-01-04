@@ -312,10 +312,6 @@ PARAMS_FOR_ANALYSIS:
 
 
   # Target Settings:
-  # 1 => TARGETS_RATIO_THRESHOLD (ceiling) or more of available CESD scores were TARGETS_VALUE_THRESHOLD or higher; 0 => otherwise
-  TARGETS_RATIO_THRESHOLD: 0.5
-  TARGETS_VALUE_THRESHOLD: 16
-
   # symptom
   SYMPTOM_COLS: [score_pain, score_fatigue, score_sleep_dist, score_concentrating, score_sad, score_anxious, score_short_breath, score_numbness, score_nausea, score_diarrhea, score_other]
   TARGET_COLS: [score_pain, score_fatigue, score_sleep_dist, score_concentrating, score_sad, score_anxious, score_short_breath, score_numbness, score_nausea, score_diarrhea] # [score_fatigue, score_pain, score_nausea, score_diarrhea]

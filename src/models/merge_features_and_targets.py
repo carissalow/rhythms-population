@@ -60,8 +60,13 @@ if summarised == "summarised":
     data = pd.concat([features, demographic_features, targets], axis=1, join="inner")
 
 elif summarised == "notsummarised":
-
-    features = pd.read_csv(snakemake.input["cleaned_features"], index_col=["pid", "local_date"])
+    try: 
+        features = pd.read_csv(snakemake.input["cleaned_features"], index_col=["pid", "local_date"])
+    except:
+        pid = snakemake.params["pid"]
+        features = pd.read_csv(snakemake.input["cleaned_features"])
+        features["pid"] = pid
+        features.set_index(["pid", "local_date"], inplace=True)
     
     # demographic_features = pd.read_csv(snakemake.input["demographic_features"])
     # features = features.merge(demographic_features, on="pid", how="left").set_index(["pid", "local_date"])

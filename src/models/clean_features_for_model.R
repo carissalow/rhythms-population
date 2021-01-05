@@ -7,15 +7,19 @@ filter_participant_without_enough_days <- function(clean_features, days_threshol
     clean_features <- clean_features %>% 
       group_by(pid) %>% 
       add_count(pid) # this adds a new column "n"
+
+    # Only keep participants with enough days
+    clean_features <- clean_features %>% 
+      filter(n >= days_threshold) %>% 
+      select(-n) %>% 
+      ungroup()
   } else {
-    clean_features <- clean_features %>% add_count(day_type)
+    if(nrow(clean_features) < days_threshold){
+      clean_features <- clean_features[0,]
+    }
   }
 
-  # Only keep participants with enough days
-  clean_features <- clean_features %>% 
-    filter(n >= days_threshold) %>% 
-    select(-n) %>% 
-    ungroup()
+
 
   return(clean_features)
 }

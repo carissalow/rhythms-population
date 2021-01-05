@@ -161,7 +161,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             pipeline = Pipeline([
                 ("sampling", oversampler),
                 ("fs", kwargs["feature_selector"]),
-                ("clf", XGBClassifier(random_state=0, n_jobs=6))
+                ("clf", XGBClassifier(random_state=0, n_jobs=2))
             ])
         elif model == "LightGBM":
             from lightgbm import LGBMClassifier
@@ -213,7 +213,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             from xgboost import XGBClassifier
             pipeline = Pipeline([
                 ("sampling", oversampler),
-                ("clf", XGBClassifier(random_state=0, n_jobs=6))
+                ("clf", XGBClassifier(random_state=0, n_jobs=2))
             ])
         elif model == "LightGBM":
             from lightgbm import LGBMClassifier

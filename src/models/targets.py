@@ -27,8 +27,10 @@ else:
 
 # Get target based on the threshold
 participant_symptoms["target"] = participant_symptoms["target_sum"].apply(lambda score: 1 if score > threshold else 0)
+participant_symptoms["last_score"] = participant_symptoms["target_sum"].shift(periods=1, fill_value=0)
+participant_symptoms["avg_score"] = (participant_symptoms["target_sum"].cumsum() / (participant_symptoms.index + 1)).shift(periods=1, fill_value=0)
 
 # Only keep the target column
-participant_symptoms = participant_symptoms[["pid", "local_date", "target"]]
+participant_symptoms = participant_symptoms[["pid", "local_date", "last_score", "avg_score", "target"]]
 
 participant_symptoms.to_csv(snakemake.output[0], index=False)

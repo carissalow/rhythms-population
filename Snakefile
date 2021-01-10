@@ -186,7 +186,9 @@ if config["PARAMS_FOR_ANALYSIS"]["COMPUTE"]:
         cols_nan_thresholds = cols_nan_thresholds + list(itertools.chain.from_iterable([threshold] * len(config["PARAMS_FOR_ANALYSIS"]["MODEL_SCALER"][model_name]) for threshold in cols_nan_threshold))
     results = config["PARAMS_FOR_ANALYSIS"]["RESULT_COMPONENTS"]
 
-
+    # files_to_compute.extend(expand("data/processed/{pid}/targets_{summarised}.csv",
+    #                             pid = config["PIDS"],
+    #                             summarised = config["PARAMS_FOR_ANALYSIS"]["SUMMARISED"]))
     # files_to_compute.extend(expand("data/processed/{pid}/data_for_individual_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{source}_{day_segment}_original.csv",
     #                             pid = config["PIDS"],
     #                             min_valid_hours_per_day=config["OVERALL_COMPLIANCE_HEATMAP"]["MIN_VALID_HOURS_PER_DAY"],

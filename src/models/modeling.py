@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from modeling_utils import getMatchingColNames, getFittedScaler, getMetrics, getFeatureImportances, createPipeline, TimeSeriesGroupKFold
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, cross_val_score
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV, cross_val_score
 import shap
 import matplotlib.pyplot as plt
 
@@ -180,6 +180,7 @@ elif summarised == "notsummarised":
 else:
     raise ValueError("SUMMARISED parameter in config.yaml can only be 'summarised' or 'notsummarised'")
 
+del data["is_readmitted"]
 
 # drop highly correlated features
 ## line 1: >= 0.9; line 2: == 1
@@ -249,10 +250,10 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
 
     if min(targets_value_counts) >= 6:
         # SMOTE requires n_neighbors <= n_samples, the default value of n_neighbors is 6
-        clf = RandomizedSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=10, n_iter=3) # param_grid
+        clf = GridSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
     else:
         # RandomOverSampler: over-sample the minority class(es) by picking samples at random with replacement.
-        clf = RandomizedSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=10, n_iter=3)
+        clf = GridSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
     clf.fit(train_x, train_y.values.ravel())
 
     # plot: interpret our model

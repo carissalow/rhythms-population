@@ -16,7 +16,7 @@ def baselineAccuracyOfMajorityClassClassifier(targets):
     return metrics, majority_class
 
 def baselineMetricsOfRandomWeightedClassifier(targets, majority_ratio, majority_class, iter_times):
-    metrics_all_iters = {"accuracy": [], "precision0":[], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": [], "kappa": []}
+    metrics_all_iters = {"accuracy": [], "precision0":[], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": []}
     probabilities = [0, 0]
     probabilities[majority_class], probabilities[1 - majority_class] = majority_ratio, 1 - majority_ratio
     for i in range(iter_times):
@@ -31,7 +31,7 @@ def baselineMetricsOfRandomWeightedClassifier(targets, majority_ratio, majority_
         avg_metrics[key] = mean(metrics_all_iters[key])
     return avg_metrics
 
-def baselineMetricsOfDTWithDayIdxFeatures(cv_method, data_x, data_y):
+def baselineMetricsOfDTWithNonsensorFeatures(cv_method, data_x, data_y):
     pred_y, true_y = [], []
     for train_index, test_index in cv_method.split(data_x):
         train_x, test_x = data_x.iloc[train_index], data_x.iloc[test_index]
@@ -59,7 +59,7 @@ data_x, data_y = data.drop("target", axis=1), data[["target"]]
 targets_value_counts = data_y["target"].value_counts()
 
 
-baseline_metrics = pd.DataFrame(columns=["method", "fullMethodName", "accuracy", "precision0", "recall0", "f10", "precision1", "recall1", "f11", "f1_macro", "auc", "kappa"])
+baseline_metrics = pd.DataFrame(columns=["method", "fullMethodName", "accuracy", "precision0", "recall0", "f10", "precision1", "recall1", "f11", "f1_macro", "auc"])
 if len(targets_value_counts) < 2:
     fout = open(snakemake.log[0], "w")
     fout.write(targets_value_counts.to_string())
@@ -71,13 +71,13 @@ else:
     majority_ratio = baseline1_metrics["accuracy"]
     # Baseline 2: random weighted classifier => random classifier with binomial distribution
     baseline2_metrics = baselineMetricsOfRandomWeightedClassifier(data_y, majority_ratio, majority_class, 1000)
-    # Baseline 3: decision tree with day_idx features
-    baseline3_metrics = baselineMetricsOfDTWithDayIdxFeatures(cv_method, data_x[["day_idx"]], data_y)
+    # Baseline 3: decision tree with non-sensor features
+    baseline3_metrics = baselineMetricsOfDTWithNonsensorFeatures(cv_method, data_x[["day_idx", "last_score", "avg_score"]], data_y)
     
     baselines = [baseline1_metrics, baseline2_metrics, baseline3_metrics]
 
     baseline_metrics = pd.DataFrame({"method": ["majority", "rwc", "dt"],
-                             "fullMethodName": ["MajorityClassClassifier", "RandomWeightedClassifier", "DecisionTreeWithDayIdxFeatures"],
+                             "fullMethodName": ["MajorityClassClassifier", "RandomWeightedClassifier", "DecisionTreeWithNonsensorFeatures"],
                              "accuracy": [baseline["accuracy"] for baseline in baselines],
                              "precision0": [baseline["precision0"] for baseline in baselines],
                              "recall0": [baseline["recall0"] for baseline in baselines],
@@ -86,7 +86,6 @@ else:
                              "recall1": [baseline["recall1"] for baseline in baselines],
                              "f11": [baseline["f11"] for baseline in baselines],
                              "f1_macro": [baseline["f1_macro"] for baseline in baselines],
-                             "auc": [baseline["auc"] for baseline in baselines],
-                             "kappa": [baseline["kappa"] for baseline in baselines]})
+                             "auc": [baseline["auc"] for baseline in baselines]})
 
 baseline_metrics.to_csv(snakemake.output[0], index=False)

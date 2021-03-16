@@ -1,14 +1,12 @@
 import pandas as pd
 import numpy as np
-from modeling_utils import getMatchingColNames, getFittedScaler, getMetrics, getFeatureImportances, createPipeline, TimeSeriesGroupKFold
+from modeling_utils import getMatchingColNames, getFittedScaler, getMetrics, createPipeline, TimeSeriesGroupKFold
 from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV, cross_val_score
 import shap
 import matplotlib.pyplot as plt
 
 np.random.seed(0)
 
-def computeAvgAndStd(metrics):
-    return str(round(np.nanmean(metrics), 4)) + "(" + str(round(np.nanstd(metrics),4)) + ")"
 
 def imputeNumericalFeaturesWithNearestTwoDays(train_numerical_features, test_numerical_features, flag):
 
@@ -180,7 +178,8 @@ elif summarised == "notsummarised":
 else:
     raise ValueError("SUMMARISED parameter in config.yaml can only be 'summarised' or 'notsummarised'")
 
-del data["is_readmitted"]
+if "is_readmitted" in data.columns:
+    del data["is_readmitted"]
 
 # drop highly correlated features
 ## line 1: >= 0.9; line 2: == 1
@@ -205,10 +204,9 @@ cv_class = globals()[cv_method]
 inner_cv = cv_class(n_splits=3)
 outer_cv = cv_class(n_splits=data.shape[0])
 
-fold_id, fold_id_unique, pid, local_date, best_params, true_y, pred_y, pred_y_proba = [], [], [], [], [], [], [], []
-feature_importances_all_folds = pd.DataFrame()
+fold_id, pid, local_date, best_params, true_y, pred_y, pred_y_proba = [], [], [], [], [], [], []
 shap_all_folds, test_all_folds = pd.DataFrame(), pd.DataFrame()
-metrics_all_folds = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": [], "kappa": []}
+metrics_all_folds = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": []}
 fold_count = 1
 
 groups = data.index.get_level_values("pid").to_numpy()
@@ -250,10 +248,12 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
 
     if min(targets_value_counts) >= 6:
         # SMOTE requires n_neighbors <= n_samples, the default value of n_neighbors is 6
-        clf = GridSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
+        #clf = GridSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
+        clf = RandomizedSearchCV(estimator=createPipeline(model, "SVMSMOTE", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=0, n_iter=3)
     else:
         # RandomOverSampler: over-sample the minority class(es) by picking samples at random with replacement.
-        clf = GridSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
+        #clf = GridSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_grid=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True)
+        clf = RandomizedSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=0, n_iter=3)
     clf.fit(train_x, train_y.values.ravel())
 
     # plot: interpret our model
@@ -278,42 +278,18 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
     true_y = true_y + test_y.values.ravel().tolist()
     pid = pid + test_y.index.get_level_values("pid").tolist()
     local_date = local_date + test_y.index.get_level_values("local_date").tolist()
-    feature_importances_current_fold = getFeatureImportances(model, clf.best_estimator_.steps[2][1], train_x.columns[clf.best_estimator_.steps[1][1].get_support(indices=True)])
-    feature_importances_all_folds = pd.concat([feature_importances_all_folds, feature_importances_current_fold], sort=False, axis=0)
     fold_id.extend([fold_count] * test_x.shape[0])
-    fold_id_unique.append(fold_count)
     fold_count = fold_count + 1
 
 
 # Step 3. Model evaluation
 metrics = getMetrics(pred_y, pred_y_proba, true_y)
-shap_all_folds.to_csv("shap_all_folds.csv")
-test_all_folds.to_csv("test_all_folds.csv")
-shap.summary_plot(shap_values=shap_all_folds.fillna(0).values, features=test_all_folds,  plot_size=(12, 8), show=False)
-plt.tight_layout()
-plt.savefig("summary_plot_allfolds.png")
-plt.clf()
-
-
 
 # Step 4. Save results, parameters, and metrics to CSV files
 fold_predictions = pd.DataFrame({"fold_id": fold_id, "pid": pid, "local_date": local_date, "hyperparameters": best_params, "true_y": true_y, "pred_y": pred_y, "pred_y_proba": pred_y_proba})
-fold_metrics = pd.DataFrame()
-overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [str(num_of_features)+">"+"75"], "accuracy": [metrics["accuracy"]], "precision0": [metrics["precision0"]], "recall0": [metrics["recall0"]], "f10": [metrics["f10"]], "precision1": [metrics["precision1"]], "recall1": [metrics["recall1"]], "f11": [metrics["f11"]], "f1_macro": [metrics["f1_macro"]], "auc": [metrics["auc"]], "kappa": [metrics["kappa"]]})
-feature_importances_all_folds.insert(loc=0, column="fold_id", value=fold_id_unique)
+overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [str(num_of_features)+">"+"75"], "accuracy": [metrics["accuracy"]], "precision0": [metrics["precision0"]], "recall0": [metrics["recall0"]], "f10": [metrics["f10"]], "precision1": [metrics["precision1"]], "recall1": [metrics["recall1"]], "f11": [metrics["f11"]], "f1_macro": [metrics["f1_macro"]], "auc": [metrics["auc"]]})
 
-fold_predictions.to_csv(snakemake.output["fold_predictions"], index=False)
-fold_metrics.to_csv(snakemake.output["fold_metrics"], index=False)
-overall_results.to_csv(snakemake.output["overall_results"], index=False)
-feature_importances_all_folds.to_csv(snakemake.output["fold_feature_importances"], index=False)
-
-
-
-
-
-
-
-metrics_all_pids = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": [], "kappa": []}
+metrics_all_pids = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": []}
 count_0, count_1 = [], []
 
 pids = list(set(fold_predictions["pid"]))
@@ -329,5 +305,10 @@ participant_results = pd.DataFrame(data=metrics_all_pids)
 participant_results.insert(0, "pid", pids)
 participant_results.insert(1, "count_0", count_0)
 participant_results.insert(2, "count_1", count_1)
+
+fold_predictions.to_csv(snakemake.output["fold_predictions"], index=False)
+overall_results.to_csv(snakemake.output["overall_results"], index=False)
 participant_results.to_csv(snakemake.output["participant_results"], index=False)
+shap_all_folds.to_csv(snakemake.output["shap_all_folds"], index=False) # this file is used to get SHAP plot
+test_all_folds.to_csv(snakemake.output["shap_test_all_folds"], index=True) # this file is used to get SHAP plot
 

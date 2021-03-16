@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 from sklearn.metrics import precision_recall_fscore_support
-from sklearn.metrics import cohen_kappa_score, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE, RandomOverSampler, SVMSMOTE
 from sklearn.model_selection._split import _BaseKFold
@@ -46,7 +46,7 @@ def getFittedScaler(features, scaler_flag):
     scaler.fit(features)
     return scaler
 
-# get metrics: accuracy, precision1, recall1, f11, auc, kappa
+# get metrics: accuracy, precision1, recall1, f11, auc
 def getMetrics(pred_y, pred_y_prob, true_y):
     metrics = {}
     count = len(np.unique(true_y))
@@ -55,7 +55,6 @@ def getMetrics(pred_y, pred_y_prob, true_y):
     metrics["accuracy"] = accuracy_score(true_y, pred_y)
     metrics["f1_macro"] = f1_score(true_y, pred_y, average="macro") # unweighted mean
     metrics["auc"] = np.nan if count == 1 else roc_auc_score(true_y, pred_y_prob)
-    metrics["kappa"] = cohen_kappa_score(true_y, pred_y)
     # metrics for label 0
     metrics["precision0"] = np.nan if (count == 1 and label == 1) else precision_score(true_y, pred_y, average=None, labels=[0,1], zero_division=0)[0]
     metrics["recall0"] = np.nan if (count == 1 and label == 1) else recall_score(true_y, pred_y, average=None, labels=[0,1])[0]
@@ -66,41 +65,6 @@ def getMetrics(pred_y, pred_y_prob, true_y):
     metrics["f11"] = np.nan if (count == 1 and label == 0) else f1_score(true_y, pred_y, average=None, labels=[0,1])[1]
 
     return metrics
-
-# get feature importances
-def getFeatureImportances(model, clf, cols):
-    if model == "LogReg":
-        # Extract the coefficient of the features in the decision function
-        # Calculate the absolute value
-        # Normalize it to sum 1
-        feature_importances = pd.DataFrame(zip(clf.coef_[0],cols), columns=["Value", "Feature"])
-        feature_importances["Value"] = feature_importances["Value"].abs()/feature_importances["Value"].abs().sum()
-    elif model == "kNN":
-        # Feature importance is not defined for the KNN Classification, return an empty dataframe
-        feature_importances = pd.DataFrame(columns=["Value", "Feature"])
-    elif model == "SVM":
-        # Coefficient of the features are only available for linear kernel
-        try:
-            # For linear kernel
-            # Extract the coefficient of the features in the decision function
-            # Calculate the absolute value
-            # Normalize it to sum 1
-            feature_importances = pd.DataFrame(zip(clf.coef_[0],cols), columns=["Value", "Feature"])
-            feature_importances["Value"] = feature_importances["Value"].abs()/feature_importances["Value"].abs().sum()
-        except:
-            # For nonlinear kernel, return an empty dataframe directly
-            feature_importances = pd.DataFrame(columns=["Value", "Feature"])
-    elif model == "LightGBM":
-        # Extract feature_importances_ and normalize it to sum 1
-        feature_importances = pd.DataFrame(zip(clf.feature_importances_,cols), columns=["Value", "Feature"])
-        feature_importances["Value"] = feature_importances["Value"]/feature_importances["Value"].sum()
-    else:
-        # For DT, RF, GB, XGBoost classifier, extract feature_importances_. This field has already been normalized.
-        feature_importances = pd.DataFrame(zip(clf.feature_importances_,cols), columns=["Value", "Feature"])
-
-    feature_importances = feature_importances.set_index(["Feature"]).T
-
-    return feature_importances
 
 def createPipeline(model, oversampler_type, *args, **kwargs):
 
@@ -168,7 +132,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             pipeline = Pipeline([
                 ("sampling", oversampler),
                 ("fs", kwargs["feature_selector"]),
-                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6)) #n_estimators=200, num_leaves=128, colsample_bytree=0.8
+                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6))
             ])
         else:
             raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
@@ -219,7 +183,7 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
             from lightgbm import LGBMClassifier
             pipeline = Pipeline([
                 ("sampling", oversampler),
-                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6)) #n_estimators=200, num_leaves=128, colsample_bytree=0.8
+                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6))
             ])
         else:
             raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")

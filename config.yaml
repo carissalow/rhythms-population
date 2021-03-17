@@ -27,6 +27,13 @@ DOWNLOAD_DATASET:
 READABLE_DATETIME:
   FIXED_TIMEZONE: *timezone
 
+
+
+
+########################################################################################################################
+#                                                 PHONE                                                                #
+########################################################################################################################
+
 PHONE_VALID_SENSED_BINS:
   COMPUTE: True # This flag is automatically ignored (set to True) if you are extracting PHONE_VALID_SENSED_DAYS or screen or Barnett's location features
   BIN_SIZE: &bin_size 5 # (in minutes)
@@ -153,6 +160,12 @@ APPLICATIONS_FOREGROUND:
   EXCLUDED_APPS: ["com.fitbit.FitbitMobile", "com.aware.plugin.upmc.cancer"]
   FEATURES: ["count", "timeoffirstuse", "timeoflastuse", "frequencyentropy"]
 
+
+
+########################################################################################################################
+#                                                 FITBIT                                                               #
+########################################################################################################################
+
 HEARTRATE:
   COMPUTE: True
   DB_TABLE: fitbit_data
@@ -206,7 +219,12 @@ CONVERSATION:
   RECORDINGMINUTES: 1
   PAUSEDMINUTES : 3
 
-### Visualizations ################################################################
+
+
+########################################################################################################################
+#                                                 PLOTS                                                                #
+########################################################################################################################
+
 HEATMAP_FEATURES_CORRELATIONS:
   PLOT: False
   MIN_ROWS_RATIO: 0.5
@@ -241,7 +259,12 @@ OVERALL_COMPLIANCE_HEATMAP:
   MIN_VALID_HOURS_PER_DAY: *min_valid_hours_per_day
   MIN_VALID_BINS_PER_HOUR: *min_valid_bins_per_hour
 
-### Rhythms Analysis ################################################################
+
+
+########################################################################################################################
+#                                                 ANALYSIS                                                             #
+########################################################################################################################
+
 PARAMS_FOR_ANALYSIS:
   COMPUTE: True
   GROUNDTRUTH_TABLE: participant_info

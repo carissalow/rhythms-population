@@ -10,8 +10,6 @@ import itertools
 
 files_to_compute = []
 
-# files_to_compute.append("data/processed/merged_targets.csv")
-
 if len(config["PIDS"]) == 0:
     raise ValueError("Add participants IDs to PIDS in config.yaml. Remember to create their participant files in data/external")
 

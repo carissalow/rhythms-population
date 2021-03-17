@@ -228,12 +228,6 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
     test_x = preprocesFeatures(train_numerical_features, test_numerical_features, train_categorical_features, test_categorical_features, scaler, "test")
     train_x, test_x = train_x.align(test_x, join='outer', axis=1, fill_value=0) # in case we get rid off categorical columns
 
-    # Compute number of participants and features
-    # values do not change between folds
-    if fold_count == 1:
-        num_of_rows = train_x.shape[0] + test_x.shape[0]
-        num_of_features = train_x.shape[1]
-
     targets_value_counts = train_y["target"].value_counts()
     if len(targets_value_counts) < 2 or max(targets_value_counts) < 5:
         notes = open(snakemake.log[0], mode="w")
@@ -287,7 +281,7 @@ metrics = getMetrics(pred_y, pred_y_proba, true_y)
 
 # Step 4. Save results, parameters, and metrics to CSV files
 fold_predictions = pd.DataFrame({"fold_id": fold_id, "pid": pid, "local_date": local_date, "hyperparameters": best_params, "true_y": true_y, "pred_y": pred_y, "pred_y_proba": pred_y_proba})
-overall_results = pd.DataFrame({"num_of_rows": [num_of_rows], "num_of_features": [str(num_of_features)+">"+"75"], "accuracy": [metrics["accuracy"]], "precision0": [metrics["precision0"]], "recall0": [metrics["recall0"]], "f10": [metrics["f10"]], "precision1": [metrics["precision1"]], "recall1": [metrics["recall1"]], "f11": [metrics["f11"]], "f1_macro": [metrics["f1_macro"]], "auc": [metrics["auc"]]})
+overall_results = pd.DataFrame({"accuracy": [metrics["accuracy"]], "precision0": [metrics["precision0"]], "recall0": [metrics["recall0"]], "f10": [metrics["f10"]], "precision1": [metrics["precision1"]], "recall1": [metrics["recall1"]], "f11": [metrics["f11"]], "f1_macro": [metrics["f1_macro"]], "auc": [metrics["auc"]]})
 
 metrics_all_pids = {"accuracy": [], "precision0": [], "recall0": [], "f10": [], "precision1": [], "recall1": [], "f11": [], "f1_macro": [], "auc": []}
 count_0, count_1 = [], []

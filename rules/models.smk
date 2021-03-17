@@ -12,18 +12,6 @@ rule days_to_analyse:
     script:
         "../src/models/select_days_to_analyse.py"
 
-# rule merged_targets:
-#     input:
-#         participant_symptoms = expand("data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_with_datetime.csv", pid=['p01', 'p02', 'p12', 'p15', 'p16', 'p17', 'p18', 'p20', 'p22', 'p23', 'p24', 'p26', 'p28', 'p29', 'p30', 'p34', 'p36', 'p37', 'p38', 'p50', 'p58'])
-#     params:
-#         date_offset = config["PARAMS_FOR_ANALYSIS"]["DATE_OFFSET"],
-#         symptom_cols = config["PARAMS_FOR_ANALYSIS"]["SYMPTOM_COLS"],
-#         target_cols = config["PARAMS_FOR_ANALYSIS"]["TARGET_COLS"]        
-#     output:
-#         "data/processed/merged_targets.csv"
-#     script:
-#         "../src/models/merged_targets.py"
-
 rule targets:
     input:
         participant_symptoms = "data/raw/{pid}/" + config["PARAMS_FOR_ANALYSIS"]["TARGET_TABLE"] + "_with_datetime.csv"
@@ -122,7 +110,6 @@ rule nan_cells_ratio_of_cleaned_features:
 rule merge_features_and_targets:
     input:
         cleaned_features = "data/processed/data_for_population_model/{min_valid_hours_per_day}hours_{min_valid_bins_per_hour}bins/{rows_nan_threshold}|{cols_nan_threshold}_{days_threshold}_{cols_var_threshold}/{source}_{day_segment}_clean.csv",
-        # demographic_features = "data/processed/data_for_population_model/demographic_features.csv",
         targets = "data/processed/data_for_population_model/targets_{summarised}.csv",
     params:
         summarised = "{summarised}",

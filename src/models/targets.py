@@ -9,7 +9,7 @@ if summarised == "summarised":
 
 participant_symptoms = pd.read_csv(snakemake.input["participant_symptoms"])
 
-# Set the M + 1 SD score as the threshold: round down
+# Set the average score of each participant as the threshold: round down
 participant_symptoms["target_sum"] = participant_symptoms[target_cols].sum(axis=1)
 if participant_symptoms.shape[0] <= 1:
     threshold = participant_symptoms["target_sum"].mean()
@@ -22,7 +22,7 @@ else:
     elif q3 == 0:
         threshold = 0
     else:
-        threshold = participant_symptoms["target_sum"].mean() #+ participant_symptoms["target_sum"].std()
+        threshold = participant_symptoms["target_sum"].mean()
 
 
 # Get target based on the threshold

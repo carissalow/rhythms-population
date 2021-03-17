@@ -68,9 +68,6 @@ elif summarised == "notsummarised":
         features["pid"] = pid
         features.set_index(["pid", "local_date"], inplace=True)
     
-    # demographic_features = pd.read_csv(snakemake.input["demographic_features"])
-    # features = features.merge(demographic_features, on="pid", how="left").set_index(["pid", "local_date"])
-
     targets = pd.read_csv(snakemake.input["targets"], parse_dates=["local_date"])
     targets.loc[:, "local_date"] = (targets["local_date"] - DateOffset(days = date_offset)).apply(lambda dt: dt.strftime("%Y-%m-%d"))
     targets.set_index(["pid", "local_date"], inplace=True)

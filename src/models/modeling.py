@@ -250,7 +250,7 @@ for train_index, test_index in outer_cv.split(data_x, groups=groups):
         clf = RandomizedSearchCV(estimator=createPipeline(model, "RandomOverSampler", feature_selector=feature_selector), param_distributions=model_hyperparams, cv=inner_cv, scoring="roc_auc", refit=True, random_state=0, n_iter=3)
     clf.fit(train_x, train_y.values.ravel())
 
-    # plot: interpret our model
+    # plot: interpret our model (the following SHAP related code only works for tree-based models)
     feature_names = train_x.columns[clf.best_estimator_.steps[1][1].get_support(indices=True)]
     explainer = shap.TreeExplainer(clf.best_estimator_.steps[2][1])
     test_current_fold = test_x[feature_names]

@@ -17,7 +17,7 @@ Check the tools/create_figure1_for_paper.py script for Figure 1.png of the paper
 Run `snakemake -j6`. Results are saved in the `data/processed/output_population_model/20hours_10bins/0.3|0.3_5_True` folder.
 
 
-2. Create Figure 1.png figure
+2. Create Figure 1.png of the paper
 
 Run `python ./tools/create_figure1_for_paper.py`
 

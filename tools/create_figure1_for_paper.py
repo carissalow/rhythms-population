@@ -28,8 +28,8 @@ name_mappings = {
 }
 
 
-shap_all_folds = pd.read_csv("rapids/data/processed/output_population_model/20hours_10bins/0.3|0.3_5_True/LightGBM/TimeSeriesGroupKFold/phone_fitbit_features_daily_notsummarised_notnormalized/shap_all_folds.csv").rename(columns=name_mappings)
-shap_test_all_folds = pd.read_csv("rapids/data/processed/output_population_model/20hours_10bins/0.3|0.3_5_True/LightGBM/TimeSeriesGroupKFold/phone_fitbit_features_daily_notsummarised_notnormalized/shap_test_all_folds.csv").rename(columns=name_mappings)
+shap_all_folds = pd.read_csv("data/processed/output_population_model/20hours_10bins/0.3|0.3_5_True/LightGBM/TimeSeriesGroupKFold/phone_fitbit_features_daily_notsummarised_notnormalized/shap_all_folds.csv").rename(columns=name_mappings)
+shap_test_all_folds = pd.read_csv("data/processed/output_population_model/20hours_10bins/0.3|0.3_5_True/LightGBM/TimeSeriesGroupKFold/phone_fitbit_features_daily_notsummarised_notnormalized/shap_test_all_folds.csv").rename(columns=name_mappings)
 
 
 shap_test_all_folds.set_index(["pid", "local_date"], inplace=True)

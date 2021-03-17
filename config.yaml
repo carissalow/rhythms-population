@@ -336,7 +336,7 @@ PARAMS_FOR_ANALYSIS:
       #{"clf__learning_rate": [0.01, 0.1, 1], "clf__n_estimators": [10, 100, 200], "clf__num_leaves": [128], "clf__colsample_bytree": [0.7, 0.8, 0.9]}
       #=> most of folds: learning rate = 0.01, number of boosted trees = 200, subsample ratio of columns when constructing each tree = 0.7
       # 2) fine tuning
-      {"clf__learning_rate": [0.08, 0.1, 0.12], "clf__n_estimators": [200], "clf__num_leaves": [128], "clf__colsample_bytree": [0.68, 0.7, 0.72]}
+      {"clf__learning_rate": [0.008, 0.01, 0.012], "clf__n_estimators": [200], "clf__num_leaves": [128], "clf__colsample_bytree": [0.68, 0.7, 0.72]}
 
 
   ### Target Settings ################################################################

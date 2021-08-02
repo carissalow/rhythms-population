@@ -77,117 +77,36 @@ def createPipeline(model, oversampler_type, *args, **kwargs):
     else:
         raise ValueError("RAPIDS pipeline only supports 'SMOTE', 'SVMSMOTE' and 'RandomOverSampler' oversampling methods.")
 
-    if "feature_selector" in kwargs.keys():
-        if model == "LogReg":
-            from sklearn.linear_model import LogisticRegression
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", LogisticRegression(random_state=0))
-            ])
-        elif model == "kNN":
-            from sklearn.neighbors import KNeighborsClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", KNeighborsClassifier())
-            ])
-        elif model == "SVM":
-            from sklearn.svm import SVC
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", SVC(random_state=0, probability=True))
-            ])
-        elif model == "DT":
-            from sklearn.tree import DecisionTreeClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", DecisionTreeClassifier(random_state=0))
-            ])
-        elif model == "RF":
-            from sklearn.ensemble import RandomForestClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", RandomForestClassifier(random_state=0))
-            ])
-        elif model == "GB":
-            from sklearn.ensemble import GradientBoostingClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", GradientBoostingClassifier(random_state=0))
-            ])
-        elif model == "XGBoost":
-            from xgboost import XGBClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", XGBClassifier(random_state=0, n_jobs=6))
-            ])
-        elif model == "LightGBM":
-            from lightgbm import LGBMClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("fs", kwargs["feature_selector"]),
-                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6))
-            ])
-        else:
-            raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
+    if model == "LogReg":
+        from sklearn.linear_model import LogisticRegression
+        clf = ("clf", LogisticRegression(random_state=0))
+    elif model == "kNN":
+        from sklearn.neighbors import KNeighborsClassifier
+        clf = ("clf", KNeighborsClassifier())
+    elif model == "SVM":
+        from sklearn.svm import SVC
+        clf = ("clf", SVC(random_state=0, probability=True))
+    elif model == "DT":
+        from sklearn.tree import DecisionTreeClassifier
+        clf = ("clf", DecisionTreeClassifier(random_state=0))
+    elif model == "RF":
+        from sklearn.ensemble import RandomForestClassifier
+        clf = ("clf", RandomForestClassifier(random_state=0))
+    elif model == "GB":
+        from sklearn.ensemble import GradientBoostingClassifier
+        clf = ("clf", GradientBoostingClassifier(random_state=0))
+    elif model == "XGBoost":
+        from xgboost import XGBClassifier
+        clf = ("clf", XGBClassifier(random_state=0, n_jobs=6))
+    elif model == "LightGBM":
+        from lightgbm import LGBMClassifier
+        clf = ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6))
     else:
-        if model == "LogReg":
-            from sklearn.linear_model import LogisticRegression
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", LogisticRegression(random_state=0))
-            ])
-        elif model == "kNN":
-            from sklearn.neighbors import KNeighborsClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", KNeighborsClassifier())
-            ])
-        elif model == "SVM":
-            from sklearn.svm import SVC
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", SVC(random_state=0, probability=True))
-            ])
-        elif model == "DT":
-            from sklearn.tree import DecisionTreeClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", DecisionTreeClassifier(random_state=0))
-            ])
-        elif model == "RF":
-            from sklearn.ensemble import RandomForestClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", RandomForestClassifier(random_state=0))
-            ])
-        elif model == "GB":
-            from sklearn.ensemble import GradientBoostingClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", GradientBoostingClassifier(random_state=0))
-            ])
-        elif model == "XGBoost":
-            from xgboost import XGBClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", XGBClassifier(random_state=0, n_jobs=6))
-            ])
-        elif model == "LightGBM":
-            from lightgbm import LGBMClassifier
-            pipeline = Pipeline([
-                ("sampling", oversampler),
-                ("clf", LGBMClassifier(objective="binary", random_state=0, n_jobs=6))
-            ])
-        else:
-            raise ValueError("RAPIDS pipeline only support LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
-
+        raise ValueError("RAPIDS pipeline only supports LogReg, kNN, SVM, DT, RF, GB, XGBoost, and LightGBM algorithms for classification problems.")
+    
+    steps = [("sampling", oversampler), ("fs", kwargs["feature_selector"])] if "feature_selector" in kwargs.keys() else [("sampling", oversampler)]
+    steps.append(clf)
+    pipeline = Pipeline(steps)
     return pipeline
 
 class TimeSeriesGroupKFold(_BaseKFold):
